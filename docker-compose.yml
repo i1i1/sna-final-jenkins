@@ -1,0 +1,41 @@
+version: '3.7'
+
+services:
+  jenkins:
+    image: jenkins/jenkins:lts
+    # No need for 50000 port as there will be no jenkins slaves
+    # ports:
+    #   - "50000:50000"
+    volumes:
+      - "/var/backup/jenkins_home:/var/jenkins_home"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jenkins.rule=Host(`ci-cd.mexator.xyz`)"
+      - "traefik.http.routers.jenkins.entrypoints=websecure"
+      - "traefik.http.routers.jenkins.tls.certresolver=letsencrypt"
+      - "traefik.http.services.jenkins.loadbalancer.server.port=8080"
+    restart: unless-stopped
+
+  proxy:
+    image: traefik:2.2
+    container_name: proxy
+    command:
+      - "--log.level=INFO"
+      - "--api.insecure=false"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=public"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/certs/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/backup/certs:/certs"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    restart: unless-stopped
