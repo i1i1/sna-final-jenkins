@@ -5,12 +5,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Setuping ssh-agent
-        uses: webfactory/ssh-agent@v0.4.1
-        with:
-            ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-      - name: Deploy
-        run:  docker-compose up -d
+      - name: Providing docker socket
+        run: |
+          eval $(ssh-agent -s) &&
+          echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add - &&
+          ssh \
+              -o ExitOnForwardFailure=yes \
+              -o StrictHostKeyChecking=no \
+              -L /tmp/docker-remote.sock:/var/run/docker.sock \
+              -N -T -f \
+                  $SSH_HOST
         env:
-          DOCKER_HOST: ${{ secrets.DOCKER_HOST }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      - name: Deploy
+        run: docker-compose up -d
+        env:
+          DOCKER_HOST: unix:///tmp/docker-remote.sock
 
