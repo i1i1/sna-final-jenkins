@@ -8,8 +8,8 @@ jobs:
       - name: Providing docker socket
         run: |
           set -ex
-          eval $(ssh-agent -s) &&
-          echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add - &&
+          eval $(ssh-agent -s)
+          echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
           ssh \
               -o ExitOnForwardFailure=yes \
               -o StrictHostKeyChecking=no \
