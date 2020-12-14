@@ -6,6 +6,7 @@ services:
     # No need for 50000 port as there will be no jenkins slaves
     # ports:
     #   - "50000:50000"
+    user: root
     volumes:
       - "/var/backup/jenkins_home:/var/jenkins_home"
       - "/var/run/docker.sock:/var/run/docker.sock"
